@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import geopandas as gpd
 import pydeck as pdk
-
+import matplotlib.pyplot as plt
 # Lendo o arquivo shapefile dos municípios de Mato Grosso
 estado = gpd.read_file("./mtmap/LIMITE_ESTADO/LIMITE_ESTADO.shp")
 municipios = gpd.read_file("./mtmap/MT_Municipios_2022/MT_Municipios_2022.shp")
@@ -13,6 +13,7 @@ microbacias = microbacias.to_crs(municipios.crs)
 
 camada_selecionada = st.selectbox("Selecione a camada:", ["Municípios", "Microbacias"])
 
+print(microbacias)
 
 if camada_selecionada == "Microbacias":
     properties_keys = list(microbacias.columns)
@@ -27,13 +28,21 @@ if camada_selecionada == "Microbacias":
 
     # Normaliza os pesos para o intervalo [0, 1]
     microbacias['weight_normalized'] = microbacias['weight'] / max_weight
+
+    title = "Microbacia"
+    name = "SubBacia"
 else:
     properties_keys = list(municipios.columns)
+    properties_keys.remove("NM_MUN")
+    properties_keys.remove("geometry")
+    properties_keys.remove("SIGLA_UF")
+
 
     variavel_selecionada = st.selectbox("Selecione a variável:", properties_keys)
     # Normaliza os pesos para o intervalo [0, 1]
     microbacias['weight_normalized'] = 0
-
+    title = "Municipio"
+    name = "NM_MUN"
 
 
 
@@ -86,8 +95,16 @@ r = pdk.Deck(
     layers=layers,
     initial_view_state=view_state,
     map_style="road",
-    tooltip={"html": f"<b>{variavel_selecionada}:</b> {{{variavel_selecionada}}}", "style": {"color": "white"}},
+    tooltip={"html": f"<b>{title}:</b> {{{name}}}<br/><b>{variavel_selecionada}:</b> {{{variavel_selecionada}}}",
+             "style": {"color": "white"}},
+
 )
 
 # Exibir o mapa no Streamlit
 st.pydeck_chart(r)
+
+#if camada_selecionada == "Microbacias":
+ #  fig, ax = plt.subplots()
+ #  microbacias[variavel_selecionada].value_counts().plot.pie(autopct='%1.1f%%', startangle=90, ax=ax)
+ #  ax.set_aspect('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+ #  st.pyplot(fig)
